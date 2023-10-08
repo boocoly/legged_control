@@ -1,0 +1,14 @@
+<launch>
+    <node pkg="z1_controller" type="z1_ctrl" name="z1_ctrl" output="screen">
+        <param name="communication" value="UDP"/>
+        <param name="z1_urdf_path" value="$(find z1_controller)/config/z1.urdf"/>
+        <rosparam file="$(find z1_controller)/config/config.yaml"/>
+    </node>
+
+<!--    <node pkg="z1_controller" type="z1_ctrl" name="z1_ctrl" output="screen">-->
+<!--        <param name="communication" value="ROS"/>-->
+<!--        <param name="UnitreeGripperYN" value="true"/>-->
+<!--        <rosparam file="$(find z1_controller)/config/config.yaml"/>-->
+<!--    </node>-->
+
+</launch>
