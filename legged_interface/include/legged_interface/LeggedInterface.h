@@ -98,7 +98,7 @@ protected:
     vector_t initialState_;
 };
 
-}
+} //namespace legged
 
 
 

@@ -107,6 +107,8 @@ void LeggedInterface::setupOptimalControlProblem(const std::string &taskFile, co
     // Constraint terms
     // 1. joint limits constraint
     problemPtr_->softConstraintPtr->add("armJointLimits", getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
+
+    //1. joint limits for a 
     //end modifiable
 
     // 2. friction cone settings

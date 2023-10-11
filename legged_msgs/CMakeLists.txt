@@ -12,6 +12,7 @@ add_message_files(
     ee_state.msg
     arm_torque.msg
     base_state.msg
+    joints_acc.msg
 )
 
 generate_messages(

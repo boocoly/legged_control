@@ -19,6 +19,9 @@
 
 #include "legged_controllers/SafetyChecker.h"
 #include <legged_msgs/ee_state.h>
+
+//first trial
+#include <legged_msgs/joints_acc.h>
 #include "legged_interface/visualization/legged_visualization.h"
 
 namespace legged {
@@ -48,6 +51,11 @@ class LeggedController : public controller_interface::MultiInterfaceController<H
   void armEeState(vector_t& ee_state);
   void armControlLaw(const ros::Time& time);
 
+  //first trial
+  legged_msgs::joints_acc createJointAccMsg(ocs2::scalar_t time, ocs2::vector_t joints_acc);
+  bool armJointsAcc(vector_t& joints_acc);
+
+
   // Interface
   std::shared_ptr<LeggedInterface> leggedInterface_;
   std::shared_ptr<PinocchioEndEffectorKinematics> eeKinematicsPtr_;
@@ -74,6 +82,9 @@ class LeggedController : public controller_interface::MultiInterfaceController<H
   // Visualization
   std::shared_ptr<LeggedVisualizer> robotVisualizer_;
   ros::Publisher observationPublisher_, eeStatePublisher_;
+
+  //first_trial
+  ros::Publisher jointAccPublisher_;
 
  private:
   std::thread mpcThread_;
