@@ -108,7 +108,7 @@ namespace legged
 
     // Initial end-effector target
     vector_t EeInitTarget(7), initTarget(leggedInterface_->getInitialState().size() + 7);
-    EeInitTarget.head(3) << 0.8, 0.0, 0.44; // + 0.056 = 0.436
+    EeInitTarget.head(3) << 0.8, 0.0, 0.34; // + 0.056 = 0.436
     EeInitTarget.tail(4) << Eigen::Quaternion<scalar_t>(1.0, 0.0, 0.0, 0.0).coeffs();
 
     vector_t initState = leggedInterface_->getInitialState();
@@ -186,13 +186,29 @@ namespace legged
     vector_t kp_arm, kd_arm;
     kp_arm.resize(6);
     kd_arm.resize(6);
-    kp_arm << 500, 600, 500, 200, 100, 10; // 100, 100, 100, 100, 100, 5
-    kd_arm << 10, 10, 20, 10, 10, 2;       // 10, 10, 10, 10, 10, 1
+
+    //according to the structure of the manipulation, the kp for j4 and j5 are about the same
+    //j3 is bigger ,so do j2 , j1, j6 is the smallest.
+
+    // kp_arm << 600, 700, 800, 300, 300, 100; 
+    // kp_arm << 100, 100, 100, 100, 100, 150;
+    // kp_arm << 500, 600, 500, 400, 300, 0;
+    kp_arm << 500, 1500, 800, 600, 500, 400;
+    // kp_arm << 0, 100, 100 ,100 ,100 ,500;
+
+    // kd_arm << 10, 10, 20, 10, 10, 2;      
+    // kd_arm << 10, 10, 10, 10, 10, 1;
+    // kd_arm << 5, 5, 5, 5, 5, 0;
+    kd_arm << 5, 5, 5, 5, 5, 5;
+    
+
 
     for (size_t j = 12; j < 18; ++j)
     { // 12, 18
-      hybridJointHandles_[j].setCommand(posDes(j), velDes(j), 0, kd_arm[j - 12], torque(j));
-      //        hybridJointHandles_[j].setCommand(posDes(j), velDes(j), kp_arm[j-12], kd_arm[j-12], 0);
+      // hybridJointHandles_[j].setCommand(posDes(j), velDes(j), 0, kd_arm[j - 12], torque[j]); //able to reach,but quiver at beginning
+      hybridJointHandles_[j].setCommand(posDes(j), velDes(j), kp_arm[j-12], kd_arm[j-12], 0); 
+      // hybridJointHandles_[j].setCommand(posDes(j), velDes(j), kp_arm[j-12], 0, 0);
+
     }
 
     //    armControlLaw(time);
@@ -207,10 +223,22 @@ namespace legged
     eeStatePublisher_.publish(createEeStateMsg(currentObservation_.time, ee_state));
 
     // first trial: publish the joint acc datas
-    vector_t joints_acc(7);
-    if(armJointsAcc(joints_acc))
+    vector_t joints_acc(6);
+    vector_t vel_desire(6);
+    vector_t pos_desire(6);
+    vector_t vel_armJoints(6);
+    vector_t pos_armJoints(6);
+    for (int i =0;i<6;i++)
     {
-      jointAccPublisher_.publish(createJointAccMsg(currentObservation_.time, joints_acc));
+      vel_desire[i] = velDes[12+i];
+      pos_desire[i] = posDes[12+i];
+      vel_armJoints[i] = hybridJointHandles_[12+i].getVelocity();
+      pos_armJoints[i] = hybridJointHandles_[12+i].getPosition();
+    }
+    
+    if(armJointsAcc(currentObservation_.time, joints_acc))
+    {
+      armJointsPublisher_.publish(createArmJointsMsg(currentObservation_.time, joints_acc, vel_desire, pos_desire, vel_armJoints, pos_armJoints));
     }
   }
 
@@ -222,8 +250,13 @@ namespace legged
     kd_arm.resize(6);
 
     // modifiable
-    kp_arm << 100, 100, 500, 200, 100, 10; // 100, 100, 100, 100, 100, 5
-    kd_arm << 10, 10, 20, 10, 10, 2;       // 10, 10, 10, 10, 10, 1
+    // kp_arm << 100, 100, 500, 200, 100, 10; 
+    // kp_arm << 100, 100, 100, 100, 100, 5;
+    kp_arm << 500, 600, 500, 400, 300, 200;
+
+    // kd_arm << 10, 10, 20, 10, 10, 2;      
+    // kd_arm << 10, 10, 10, 10, 10, 1;
+    kd_arm << 5, 5, 5, 5, 5, 5;
 
     Eigen::Matrix<double, 6, 1> posDes, jointPos, jointVel;
     posDes << 0.0, 1.85, -1.15, -0.85, 0, 0;
@@ -333,7 +366,7 @@ namespace legged
     eeStatePublisher_ = nh.advertise<legged_msgs::ee_state>(robotName + "_mpc_observation_ee_state", 1);
 
     // first trial
-    jointAccPublisher_ = nh.advertise<legged_msgs::joints_acc>(robotName + "_Z1_joints_acc", 10);
+    armJointsPublisher_ = nh.advertise<legged_msgs::arm_joints_debug>(robotName + "_Z1_joints_debug", 10);
   }
 
   void LeggedController::setupMrt()
@@ -396,47 +429,57 @@ namespace legged
   }
 
   // first trial
-  legged_msgs::joints_acc LeggedController::createJointAccMsg(ocs2::scalar_t time, ocs2::vector_t joints_acc)
+  legged_msgs::arm_joints_debug LeggedController::createArmJointsMsg(ocs2::scalar_t time, ocs2::vector_t joints_acc, \
+  ocs2::vector_t vel_d, ocs2::vector_t pos_d, ocs2::vector_t vel, ocs2::vector_t pos)
   {
-    legged_msgs::joints_acc joints_acc_msg;
+    legged_msgs::arm_joints_debug arm_msgs;
 
-    joints_acc_msg.time = time;
+    arm_msgs.time = time;
 
-    joints_acc_msg.acc_s.resize(6);
+    arm_msgs.acc_s.resize(6);
+    arm_msgs.vel_d.resize(6);
+    arm_msgs.pos_d.resize(6);
+    arm_msgs.vel.resize(6);
+    arm_msgs.pos.resize(6);
     for (size_t i = 0; i < 6; i++)
     {
-      joints_acc_msg.acc_s[i] = static_cast<_Float64>(joints_acc[i]);
+      arm_msgs.acc_s[i] = static_cast<_Float64>(joints_acc[i]);
+      arm_msgs.vel_d[i] = static_cast<_Float64>(vel_d[i]);
+      arm_msgs.pos_d[i] = static_cast<_Float64>(pos_d[i]);
+      arm_msgs.vel[i] = static_cast<_Float64>(vel[i]);
+      arm_msgs.pos[i] = static_cast<_Float64>(pos[i]);
     }
 
-    return joints_acc_msg;
+    return arm_msgs;
   }
 
-  bool LeggedController::armJointsAcc(vector_t &joints_acc)
+  /*bool LeggedController::armJointsAcc(ocs2::scalar_t time, vector_t &joints_acc)
   {
     static bool is_first_time = true;
     static bool is_second_time = false;
     static vector_t last_joint_pose(6);
     static vector_t last_joint_vel(6);
     static vector_t current_joint_vel(6);
-
+    static ocs2::scalar_t last_time = 0;
     // At least the third time enterring this function can actually get the acceleration of 6 joints
     if (is_first_time)
     {
       is_first_time = false;
       last_joint_pose = currentObservation_.state.segment<6>(24);
       is_second_time = true;
+      last_time = time;
       return false;  //fail to get accelerations
     }
-
     else if (is_second_time) //the second time
     {
       is_second_time = false;
       for (size_t i = 0; i < 6; i++)
       {
         // TODO: To consider the interval?
-        last_joint_vel[i] = currentObservation_.state(24 + i) - last_joint_pose(i);
+        last_joint_vel[i] = (currentObservation_.state(24 + i) - last_joint_pose(i)) / (time-last_time);
       }
       last_joint_pose = currentObservation_.state.segment<6>(24);
+      last_time = time;
       return false; //fail to get accelerations
     }
 
@@ -444,15 +487,46 @@ namespace legged
     {
       for (size_t i = 0; i < 6; i++)
       {
-        current_joint_vel[i] = currentObservation_.state(24 + i) - last_joint_pose(i);
-        joints_acc[i] = current_joint_vel[i] - last_joint_vel[i];
+        current_joint_vel[i] = (currentObservation_.state(24 + i) - last_joint_pose(i)) / (time-last_time);
+        joints_acc[i] = (current_joint_vel[i] - last_joint_vel[i])/(time-last_time);
       }
       last_joint_vel = current_joint_vel;
       last_joint_pose = currentObservation_.state.segment<6>(24);
+      last_time = time;
+      return true; //successfully get the accelerations
+    }
+  } */
+  
+
+ bool LeggedController::armJointsAcc(ocs2::scalar_t time, vector_t &joints_acc)
+  {
+    static bool is_first_time = true;
+    static vector_t last_joint_vel(6);
+    static vector_t current_joint_vel(6);
+    static ocs2::scalar_t last_time = time;
+    // At least the second time enterring this function can actually get the acceleration of 6 joints
+    if (is_first_time)
+    {
+      is_first_time = false;
+      for(size_t i(0); i<6; i++)
+      {
+        last_joint_vel[i] = hybridJointHandles_[i+12].getVelocity();
+      }
+      return false;  //fail to get accelerations
+    }
+    else
+    {
+      for (size_t i = 0; i < 6; i++)
+      {
+        current_joint_vel[i] = hybridJointHandles_[12+i].getVelocity();
+        joints_acc[i] = (current_joint_vel[i] - last_joint_vel[i])/(time-last_time);
+      }
+      last_joint_vel = current_joint_vel;
+      last_time = time;
       return true; //successfully get the accelerations
     }
   }
-
+  
   void LeggedController::armEeState(vector_t &ee_state)
   {
     armEeKinematicsPtr_->setPinocchioInterface(leggedInterface_->getPinocchioInterface());

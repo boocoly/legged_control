@@ -107,8 +107,9 @@ void LeggedInterface::setupOptimalControlProblem(const std::string &taskFile, co
     // Constraint terms
     // 1. joint limits constraint
     problemPtr_->softConstraintPtr->add("armJointLimits", getJointLimitSoftConstraint(*pinocchioInterfacePtr_, taskFile, verbose));
-
-    //1. joint limits for a 
+    
+    //1.limitation for joints acceleration
+    
     //end modifiable
 
     // 2. friction cone settings
@@ -255,6 +256,9 @@ std::unique_ptr<StateInputCost> LeggedInterface::getJointLimitSoftConstraint(con
             std::cerr << " #### =============================================================================\n";
         }
     }
+
+    //TODO:load joint acceleration cost
+    
 
     auto boxConstraints = std::unique_ptr<StateInputSoftBoxConstraint>(new StateInputSoftBoxConstraint(stateLimits, inputLimits));
     boxConstraints->initializeOffset(0.0, vector_t::Zero(centroidalModelInfo_.stateDim), vector_t::Zero(centroidalModelInfo_.inputDim));

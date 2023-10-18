@@ -224,12 +224,12 @@ Q
   (23,23) 2.5     ; RH_KFE
 
   ;; Arm Joint Positions: [LF, LH, RF, RH] ;;
-  (24,24) 5.0     ; joint1
-  (25,25) 5.0     ; joint2
-  (26,26) 5.0     ; joint3
-  (27,27) 5.0     ; joint4
-  (28,28) 5.0     ; joint5
-  (29,29) 5.0     ; joint6
+  (24,24) 0.0     ; joint1   5
+  (25,25) 0.0     ; joint2   5
+  (26,26) 0.0     ; joint3  5
+  (27,27) 0.0     ; joint4  5
+  (28,28) 0.0     ; joint5  5
+  (29,29) 0.0     ; joint6  5
 }
 
 ; control weight matrix
@@ -310,7 +310,7 @@ jointPositionLimits
 jointVelocityLimits
 {
   ; relaxed log barrier mu
-  mu      0.1 
+  mu      0.5   ; 0.1
 
   ; relaxed log barrier delta
   delta   1e-3
@@ -320,12 +320,12 @@ jointVelocityLimits
     ; velocity limits for the arm DOFs
     arm
     {
-      (0,0)  -0.628    ; arm_1 [rad/s]
-      (1,0)  -0.628    ; arm_2 [rad/s]
-      (2,0)  -0.628    ; arm_3 [rad/s]
-      (3,0)  -0.837	   ; arm_4 [rad/s]
-      (4,0)  -0.837	   ; arm_5 [rad/s]
-      (5,0)  -0.837	   ; arm_6 [rad/s]
+      (0,0)  -1.2    ; arm_1 [rad/s]
+      (1,0)  -1.2    ; arm_2 [rad/s]
+      (2,0)  -1.2    ; arm_3 [rad/s]
+      (3,0)  -1.2   ; arm_4 [rad/s]
+      (4,0)  -1.2   ; arm_5 [rad/s]
+      (5,0)  -1.2	   ; arm_6 [rad/s]
     }
   }
 
@@ -334,12 +334,12 @@ jointVelocityLimits
     ; velocity limits for the arm DOFs
     arm
     {
-      (0,0)  0.628     ; arm_1 [rad/s]
-      (1,0)  0.628 	   ; arm_2 [rad/s]
-      (2,0)  0.628 	   ; arm_3 [rad/s]
-      (3,0)  0.837	   ; arm_4 [rad/s]
-      (4,0)  0.837	   ; arm_5 [rad/s]
-      (5,0)  0.837	   ; arm_6 [rad/s]
+      (0,0)  1.2     ; arm_1 [rad/s]
+      (1,0)  1.2 	   ; arm_2 [rad/s]
+      (2,0)  1.2 	   ; arm_3 [rad/s]
+      (3,0)  1.2	   ; arm_4 [rad/s]
+      (4,0)  1.2	   ; arm_5 [rad/s]
+      (5,0)  1.2	   ; arm_6 [rad/s]
     }
   }
 }

@@ -21,7 +21,7 @@
 #include <legged_msgs/ee_state.h>
 
 //first trial
-#include <legged_msgs/joints_acc.h>
+#include <legged_msgs/arm_joints_debug.h>
 #include "legged_interface/visualization/legged_visualization.h"
 
 namespace legged {
@@ -52,8 +52,9 @@ class LeggedController : public controller_interface::MultiInterfaceController<H
   void armControlLaw(const ros::Time& time);
 
   //first trial
-  legged_msgs::joints_acc createJointAccMsg(ocs2::scalar_t time, ocs2::vector_t joints_acc);
-  bool armJointsAcc(vector_t& joints_acc);
+  legged_msgs::arm_joints_debug createArmJointsMsg(ocs2::scalar_t time, ocs2::vector_t joints_acc, ocs2::vector_t vel_d, ocs2::vector_t pos_d, 
+  ocs2::vector_t vel, ocs2::vector_t pos);
+  bool armJointsAcc(ocs2::scalar_t time, vector_t& joints_acc);
 
 
   // Interface
@@ -84,7 +85,7 @@ class LeggedController : public controller_interface::MultiInterfaceController<H
   ros::Publisher observationPublisher_, eeStatePublisher_;
 
   //first_trial
-  ros::Publisher jointAccPublisher_;
+  ros::Publisher armJointsPublisher_;
 
  private:
   std::thread mpcThread_;
