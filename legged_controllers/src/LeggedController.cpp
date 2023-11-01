@@ -193,22 +193,49 @@ namespace legged
     // kp_arm << 600, 700, 800, 300, 300, 100; 
     // kp_arm << 100, 100, 100, 100, 100, 150;
     // kp_arm << 500, 600, 500, 400, 300, 0;
-    kp_arm << 500, 1500, 800, 600, 500, 400;
-    // kp_arm << 0, 100, 100 ,100 ,100 ,500;
+    // kp_arm << 500, 1000, 800, 600, 500, 400;
+    kp_arm << 500, 500, 500 ,500 ,500 ,100;
 
     // kd_arm << 10, 10, 20, 10, 10, 2;      
     // kd_arm << 10, 10, 10, 10, 10, 1;
     // kd_arm << 5, 5, 5, 5, 5, 0;
-    kd_arm << 5, 5, 5, 5, 5, 5;
-    
+    kd_arm << 5, 10, 5, 5, 5, 0;
 
+    //test the performance of every single joint on Z1.
+    // vector_t posDes_test, velDes_test;
+    // posDes_test.resize(6);
+    // velDes_test.resize(6);
 
+    // int joint_test_num = 5;
+    // double joint_test_vel = 0.1;
+
+    // velDes_test << 0,0,0,0,0,0;
+    // velDes_test[joint_test_num] = joint_test_vel; 
+    // double posDes_single = hybridJointHandles_[12+joint_test_num].getPosition() + joint_test_vel * 0.001;
+    // posDes_test << 0,0,0,0,0,0;
+    // posDes_test[joint_test_num] = posDes_single;
+
+    //Low-pass filtering
+    static vector_t last_velDes = Eigen::Matrix<double,6,1>::Zero();
+    static vector_t last_posDes = Eigen::Matrix<double,6,1>::Zero();
+    static vector_t current_velDes = Eigen::Matrix<double,6,1>::Zero();
+    static vector_t current_posDes = Eigen::Matrix<double,6,1>::Zero();
+
+    //The tuning parameter for L-P fiter
+    double alpha = 0.1;
+    //set commands for arm's joints
     for (size_t j = 12; j < 18; ++j)
     { // 12, 18
-      // hybridJointHandles_[j].setCommand(posDes(j), velDes(j), 0, kd_arm[j - 12], torque[j]); //able to reach,but quiver at beginning
-      hybridJointHandles_[j].setCommand(posDes(j), velDes(j), kp_arm[j-12], kd_arm[j-12], 0); 
-      // hybridJointHandles_[j].setCommand(posDes(j), velDes(j), kp_arm[j-12], 0, 0);
 
+      current_posDes[j-12] = (posDes[j]* alpha + last_posDes[j-12] * (1-alpha));
+      current_velDes[j-12] = (velDes[j]*alpha + last_velDes[j-12] * (1-alpha));
+
+      hybridJointHandles_[j].setCommand(current_posDes[j-12], current_velDes[j-12], kp_arm[j-12], kd_arm[j-12], 0); //able to reach,but quiver at beginning
+      // hybridJointHandles_[j].setCommand(posDes[j], velDes[j],0, 0, 0);
+      // hybridJointHandles_[j].setCommand(0, 0, 0, 0, 0);
+      // hybridJointHandles_[j].setCommand(posDes_test[j-12], velDes_test[j-12],kp_arm[j-12], kd_arm[j-12],0);
+      last_posDes[j-12] = current_posDes[j-12];
+      last_velDes[j-12] = current_velDes[j-12];
     }
 
     //    armControlLaw(time);
@@ -222,7 +249,7 @@ namespace legged
     armEeState(ee_state);
     eeStatePublisher_.publish(createEeStateMsg(currentObservation_.time, ee_state));
 
-    // first trial: publish the joint acc datas
+    //publish the joint debug datas
     vector_t joints_acc(6);
     vector_t vel_desire(6);
     vector_t pos_desire(6);
@@ -230,8 +257,10 @@ namespace legged
     vector_t pos_armJoints(6);
     for (int i =0;i<6;i++)
     {
-      vel_desire[i] = velDes[12+i];
-      pos_desire[i] = posDes[12+i];
+      // vel_desire[i] = velDes[12+i];
+      // pos_desire[i] = posDes[12+i];
+      vel_desire[i] = current_velDes[i];
+      pos_desire[i] = current_posDes[i];
       vel_armJoints[i] = hybridJointHandles_[12+i].getVelocity();
       pos_armJoints[i] = hybridJointHandles_[12+i].getPosition();
     }

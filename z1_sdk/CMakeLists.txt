@@ -30,16 +30,16 @@ include_directories(
 )
 
 # examples
-#set(EXAMPLE_FILES
-#  examples/example_joint_ctrl.cpp
-#  examples/example_lowcmd.cpp
-#)
-#
-#foreach(EXAMPLE_FILE IN LISTS EXAMPLE_FILES)
-#  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE} NAME_WE)
-#  add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE})
-#  target_link_libraries(${EXAMPLE_NAME} ${catkin_LIBRARIES} unitree_arm_sdk)
-#endforeach()
+set(EXAMPLE_FILES
+  examples/example_joint_ctrl.cpp
+  examples/example_lowcmd.cpp
+)
+
+foreach(EXAMPLE_FILE IN LISTS EXAMPLE_FILES)
+  get_filename_component(EXAMPLE_NAME ${EXAMPLE_FILE} NAME_WE)
+  add_executable(${EXAMPLE_NAME} ${EXAMPLE_FILE})
+  target_link_libraries(${EXAMPLE_NAME} ${catkin_LIBRARIES} unitree_arm_sdk)
+endforeach()
 
 # find_package(pybind11 QUIET)
 # if(${pybind11_FOUND})

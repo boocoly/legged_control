@@ -10,6 +10,8 @@ bool UnitreeHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh) {
   if (!LeggedHW::init(root_nh, robot_hw_nh)) {
     return false;
   }
+  std::cerr << "Begin!!!!" <<std::endl;
+  ROS_INFO("HW Initializing...");
   robot_hw_nh.param<bool>("UnitreeGripperYN", has_gripper, true);
   std::string controller_ip;
   robot_hw_nh.param<std::string>("udp_to_controller/controller_ip", controller_ip, "127.0.0.1");
@@ -24,6 +26,8 @@ bool UnitreeHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh) {
   setupContactSensor(robot_hw_nh);
 
   // Quadruped setting
+  // std::cerr << "nitree Quad Initializing..." <<std::endl;
+  ROS_INFO("Unitree Quad Initializing...");
   udp_ = std::make_shared<UNITREE_LEGGED_SDK::UDP>(UNITREE_LEGGED_SDK::LOWLEVEL);
   udp_->InitCmdData(lowCmd_);
 
@@ -39,10 +43,14 @@ bool UnitreeHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh) {
   }
 
   // TODO Arm setting
-  arm = new UNITREE_ARM_SDK::UnitreeArm(controller_ip, sdk_own_port, controller_port);
+  // arm = new UNITREE_ARM_SDK::UnitreeArm(controller_ip, sdk_own_port, controller_port);
+  arm = new UNITREE_ARM_SDK::UnitreeArm("127.0.0.1");
+  
+  std::cerr << "Unitree arm Initializing..." <<std::endl;
   ROS_INFO("Unitree Arm Initializing...");
 
   arm->init();
+  std::cerr << " arm Initialized" <<std::endl;
 
   // get initial pos
   for(int i(0); i<6; i++) {
@@ -56,6 +64,7 @@ bool UnitreeHW::init(ros::NodeHandle& root_nh, ros::NodeHandle& robot_hw_nh) {
     gripper_as = new actionlib::SimpleActionServer<control_msgs::GripperCommandAction>("z1_gripper", boost::bind(&UnitreeHW::gripperCB, this, _1), false);
     gripper_as->start();
 
+    std::cerr << " Gripper Initialized" <<std::endl;
 
   ROS_INFO("\033[1;32m [MmHW]: Hardware start successfully! \033[0m");
   return true;
@@ -135,16 +144,29 @@ void UnitreeHW::write(const ros::Time& /*time*/, const ros::Duration& /*period*/
 
 
   //TODO Arm Write
-    arm->armCmd.mode = (mode_t)UNITREE_ARM_SDK::ArmMode::LowCmd;
-    Eigen::Matrix<double, 6, 1> tau_ff;
+    // arm->armCmd.mode = (mode_t)UNITREE_ARM_SDK::ArmMode::LowCmd;
+    // Eigen::Matrix<double, 6, 1> tau_ff;
+    // for(int i(0); i<6; i++) {
+    //     // arm->armCmd.q_d[i] = static_cast<float>(jointData_[i+12].posDes_);
+    //     arm->armCmd.q_d[i] = static_cast<float>(jointData_[i+12].pos_ + jointData_[i+12].velDes_* 0.001);
+    //     arm->armCmd.dq_d[i] = static_cast<float>(jointData_[i+12].velDes_);
+    //     arm->armCmd.Kp[i] = static_cast<float>(jointData_[i+12].kp_);
+    //     arm->armCmd.Kd[i] = static_cast<float>(jointData_[i+12].kd_);
+    //     tau_ff[i] = jointData_[i+12].ff_;
+    // }
+    // arm->armCmd.setTau(tau_ff);
+
+    arm->armCmd.mode = (mode_t)UNITREE_ARM_SDK::ArmMode::JointSpeedCtrl;
     for(int i(0); i<6; i++) {
-        arm->armCmd.q_d[i] = jointData_[i+12].posDes_;
         arm->armCmd.dq_d[i] = jointData_[i+12].velDes_;
-        arm->armCmd.Kp[i] = jointData_[i+12].kp_;
-        arm->armCmd.Kd[i] = jointData_[i+12].kd_;
-        tau_ff[i] = jointData_[i+12].ff_;
     }
-    arm->armCmd.setTau(tau_ff);
+
+    // arm->armCmd.mode = (mode_t)UNITREE_ARM_SDK::ArmMode::JointPositionCtrl;
+    // for(int i(0); i<6; i++) {
+    //     arm->armCmd.q_d[i] = jointData_[i+12].posDes_;
+    //     arm->armCmd.dq_d[i] = jointData_[i+12].velDes_;
+    // }
+
 
 
     if(has_gripper) {
